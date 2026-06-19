@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Pendampingan Desa Kecamatan Barambai</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+  
+  * {
+    font-family: 'Poppins', sans-serif;
+  }
+  
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  
+  .gradient-red-white {
+    background: linear-gradient(135deg, #DC2626 0%, #EF4444 50%, #FFFFFF 100%);
+  }
+  
+  .gradient-blue {
+    background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%);
+  }
+  
+  .menu-item-active {
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%);
+    border-left: 4px solid #3B82F6;
+  }
+  
+  .submenu-enter {
+    animation: slideDown 0.3s ease-out forwards;
+  }
+  
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes pulse-loading {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  
+  .loading-pulse {
+    animation: pulse-loading 1.5s ease-in-out infinite;
+  }
+  
+  .card-hover {
+    transition: all 0.3s ease;
+    min-height: 140px;
+    overflow: visible;
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  .garuda-pattern {
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23DC2626' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  @media (min-width: 640px) {
+    .stat-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .stat-grid {
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1.5rem;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .sidebar-mobile {
+      transform: translateX(-100%);
+      transition: transform 0.3s ease-in-out;
+    }
+    .sidebar-mobile.show {
+      transform: translateX(0);
+    }
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+</style>
+</head>
+<body class="bg-gray-50 garuda-pattern">
+  <!-- Header -->
+  <header class="gradient-blue text-white shadow-lg fixed top-0 left-0 right-0 z-50">
+    <div class="container mx-auto px-4">
+      <div class="flex items-center justify-between h-16 md:h-20">
+        <div class="flex items-center gap-3">
+          <button id="mobileMenuBtn" class="md:hidden text-white text-xl focus:outline-none">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="flex items-center gap-2 md:gap-3">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Garuda_Pancasila.svg/1200px-Garuda_Pancasila.svg.png" alt="Logo" class="h-8 w-8 md:h-12 md:w-12 object-contain bg-white rounded-full p-1">
+            <div>
+              <h1 class="text-sm md:text-xl font-bold leading-tight">DASHBOARD PENDAMPINGAN DESA</h1>
+              <p class="text-xs md:text-sm text-blue-100 hidden sm:block">KECAMATAN BARAMBAI</p>
+            </div>
+          </div>
+        <div class="flex items-center gap-2 md:gap-4">
+          <a href="https://tppkecamatanbarambai.blogspot.com/" target="_blank" class="bg-white text-blue-700 px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-semibold text-xs md:text-sm hover:bg-blue-50 transition shadow-md flex items-center gap-2">
+            <i class="fas fa-external-link-alt"></i>
+            <span class="hidden sm:inline">Branch TPP</span>
+          </a>
+          <button class="text-white hover:bg-blue-600 p-2 rounded-lg transition">
+            <i class="fas fa-bell text-lg"></i>
+          </button>
+          <div class="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white flex items-center justify-center text-blue-700 font-bold text-sm">
+            AD
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Overlay -->
+  <div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+
+  <!-- Loading Banner -->
+  <div id="loadingBanner" class="fixed top-16 md:top-20 left-0 right-0 bg-yellow-100 border-b border-yellow-300 text-yellow-800 px-4 py-2 text-sm z-40 hidden">
+    <div class="container mx-auto flex items-center gap-2">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span id="loadingText">Memuat data real-time dari Google Sheets...</span>
+    </div>
+  </div>
+
+  <!-- Error Banner -->
+  <div id="errorBanner" class="fixed top-16 md:top-20 left-0 right-0 bg-red-100 border-b border-red-300 text-red-800 px-4 py-2 text-sm z-40 hidden">
+    <div class="container mx-auto flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span id="errorText">Gagal memuat data. Menggunakan data contoh.</span>
+      </div>
+      <button onclick="loadAllData()" class="text-xs bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Coba Lagi</button>
+    </div>
+  </div>
+
+  <div class="flex pt-16 md:pt-20" id="mainContainer">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar-mobile md:translate-x-0 fixed md:sticky top-16 md:top-20 left-0 w-72 h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] bg-white shadow-xl z-40 overflow-y-auto scrollbar-hide">
+      <div class="p-4">
+        <div class="mb-6 p-4 gradient-red-white rounded-xl text-white shadow-md">
+          <div class="flex items-center gap-3 mb-2">
+            <i class="fas fa-user-shield text-2xl"></i>
+            <div>
+              <p class="font-semibold text-sm">Pendamping Lokal Desa</p>
+              <p class="text-xs opacity-90">Kec. Barambai</p>
+            </div>
+          </div>
+        </div>
+
+        <nav class="space-y-2">
+          <!-- Dashboard Home -->
+          <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg menu-item-active text-blue-700 font-medium transition">
+            <i class="fas fa-home w-5"></i>
+            <span>Dashboard</span>
+          </a>
+
+          <!-- 1. Perencanaan Desa -->
+          <div class="menu-group">
+            <button class="menu-toggle w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition text-gray-700 font-medium">
+              <div class="flex items-center gap-3">
+                <i class="fas fa-calendar-check w-5 text-blue-600"></i>
+                <span>Perencanaan Desa</span>
+              </div>
+              <i class="fas fa-chevron-down text-xs transition-transform"></i>
+            </button>
+            <div class="submenu hidden pl-12 pr-4 py-2 space-y-1">
+              <a href="#" class="block py-2 px-3 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition">
+                <i class="fas fa-circle text-[6px] mr-2"></i>Rembuk Stunting
+              </a>
+              <a href="#" class="block py-2 px-3 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition">
+                <i class="fas fa-circle text-[6px] mr-2"></i>Musyawarah Desa
+              </a>
+              <a href="#" class="block py-2 px-3 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition">
+                <i class="fas fa-circle text-[6px] mr-2"></i>Musrenbang Desa
+              </a>
+            </div>
+          </div>
+
+          <!-- 2. Update Laporan -->
+          <div class="menu-group">
+            <button class="menu-toggle w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition text-gray-700 font-medium">
+              <div class="flex items-center gap-3">
+                <i class="fas fa-file-alt w-5 text-green-600"></i>
+                <span>Update Laporan</span>
+              </div>
+              <i class="fas fa-chevron-down text-xs transition-transform"></i>
+            </button>
+            <div class="submenu hidden pl-12 pr-4 py-2 space-y-1">
+              <a href="#" class="block py-2 px-3 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition">
+                <i class="fas fa-circle text-[6px] mr-2"></i>Grafik Penyaluran DD
+              </a>
+              <a href="#" class="block py-2 px-3 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition">
+                <i class="fas fa-circle text-[6px] mr-2"></i>Penyaluran BLT
+              </a>
+              <a href="#" class="block py-2 px-3 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition">
+                <i class="fas fa-circle text-[6px] mr-2"></i>BNBA KPM BLT
+              </a>
+              <a href="#" class="block py-2 px-3 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition">
+                <i class="fas fa-circle text-[6px] mr-2"></i>Laporan Prioritas DD
+              </a>
+              <a href="#" class="block py-2 px-3 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition">
+                <i class="fas fa-circle text-[6px] mr-2"></i>Serapan Prioritas DD
+              </a>
+            </div>
+          </div>
+
+          <!-- 3. Bumdesa -->
+          <div class="menu-group">
+            <button class="menu-toggle w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition text-gray-700 font-medium">
+              <div class="flex items-center gap-3">
+                <i class="fas fa-building w-5 text-purple-600"></i>
+                <span>Bumdesa</span>
+              </div>
+              <i class="fas fa-chevron-down text-xs transition-transform"></i>
+            </button>
+            <div class="submenu hidden pl-12 pr-4 py-2 space-y-1">
+              <a href="#" class="block py-2 px-3 text-sm text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition">
+                <i class="fas fa-circle text-[6px] mr-2"></i>Data Bumdesa
+              </a>
+              <a href="https://bumdes.kemendesa.go.id/" target="_blank" class="block py-2 px-3 text-sm text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition">
+                <i class="fas fa-circle text-[6px] mr-2"></i>Website Bumdesa Kemendes
+              </a>
+            </div>
+          </div>
+
+          <!-- 4. Indeks Desa -->
+          <div class="menu-group">
+            <button class="menu-toggle w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition text-gray-700 font-medium">
+              <div class="flex items-center gap-3">
+                <i class="fas fa-chart-line w-5 text-orange-600"></i>
+                <span>Indeks Desa</span>
+              </div>
+              <i class="fas fa-chevron-down text-xs transition-transform"></i>
+            </button>
+            <div class="submenu hidden pl-12 pr-4 py-2 space-y-1">
+              <a href="#" class="block py-2 px-3 text-sm text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded transition">
+                <i class="fas fa-circle text-[6px] mr-2"></i>Data Indeks Desa
+              </a>
+              <a href="https://id.kemendesa.go.id/" target="_blank" class="block py-2 px-3 text-sm text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded transition">
+                <i class="fas fa-circle text-[6px] mr-2"></i>Website ID Kemendes
+              </a>
+            </div>
+          </div>
+
+          <!-- 5. SDGs Desa -->
+          <div class="menu-group">
+            <button class="menu-toggle w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition text-gray-700 font-medium">
+              <div class="flex items-center gap-3">
+                <i class="fas fa-globe-asia w-5 text-teal-600"></i>
+                <span>SDGs Desa</span>
+              </div>
+              <i class="fas fa-chevron-down text-xs transition-transform"></i>
+            </button>
+            <div class="submenu hidden pl-12 pr-4 py-2 space-y-1">
+              <a href="#" class="block py-2 px-3 text-sm text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded transition">
+                <i class="fas fa-circle text-[6px] mr-2"></i>Data SDGs Desa
+              </a>
+              <a href="https://sid.kemendesa.go.id/" target="_blank" class="block py-2 px-3 text-sm text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded transition">
+                <i class="fas fa-circle text-[6px] mr-2"></i>Website SDGs Desa Kemendes
+              </a>
+            </div>
+          </div>
+
+          <!-- 6. EHDw -->
+          <div class="menu-group">
+            <button class="menu-toggle w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition text-gray-700 font-medium">
+              <div class="flex items-center gap-3">
+                <i class="fas fa-heartbeat w-5 text-red-600"></i>
+                <span>EHDw</span>
+              </div>
+              <i class="fas fa-chevron-down text-xs transition-transform"></i>
+            </button>
+            <div class="submenu hidden pl-12 pr-4 py-2 space-y-1">
+              <a href="#" class="block py-2 px-3 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition">
+                <i class="fas fa-circle text-[6px] mr-2"></i>Data EHDw
+              </a>
+              <a href="https://sipd.kemendesa.go.id/" target="_blank" class="block py-2 px-3 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition">
+                <i class="fas fa-circle text-[6px] mr-2"></i>Website EHDw Kemendes
+              </a>
+            </div>
+          </div>
+
+          <!-- 7. Bank Dokumen -->
+          <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition text-gray-700 font-medium">
+            <i class="fas fa-folder-open w-5 text-yellow-600"></i>
+            <span>Bank Dokumen</span>
+          </a>
+        </nav>
+
+        <div class="mt-8 p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+          <p class="text-xs text-blue-800 font-semibold mb-2">Butuh Bantuan?</p>
+          <p class="text-xs text-blue-600 mb-3">Hubungi admin untuk pendampingan teknis</p>
+          <button class="w-full bg-blue-600 text-white text-xs py-2 rounded-lg hover:bg-blue-700 transition">
+            <i class="fab fa-whatsapp mr-1"></i> Hubungi Admin
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-4 md:p-6 lg:p-8 w-full overflow-x-hidden">
+      <!-- Welcome Banner -->
+      <div class="gradient-blue rounded-2xl p-6 md:p-8 text-white mb-6 shadow-xl">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl md:text-3xl font-bold mb-2">Selamat Datang! 👋</h2>
+            <p class="text-blue-100 text-sm md:text-base">Sistem Informasi Pendampingan Desa Kecamatan Barambai</p>
+            <p class="text-blue-200 text-xs md:text-sm mt-2" id="currentDate"></p>
+          </div>
+          <div class="flex gap-2">
+            <button class="bg-white text-blue-700 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-50 transition shadow-md">
+              <i class="fas fa-download mr-2"></i>Download Laporan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stat-grid mb-6">
+        <div class="glass-effect rounded-xl p-4 md:p-6 shadow-md card-hover border border-gray-100">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+              <i class="fas fa-village text-blue-600 text-xl"></i>
+            </div>
+            <span class="text-green-600 text-xs font-semibold bg-green-50 px-2 py-1 rounded-full">Aktif</span>
+          </div>
+          <h3 class="text-2xl md:text-3xl font-bold text-gray-800 mb-1 loading-pulse" id="totalDesa">-</h3>
+          <p class="text-xs md:text-sm text-gray-600">Total Desa</p>
+        </div>
+
+        <div class="glass-effect rounded-xl p-4 md:p-6 shadow-md card-hover border border-gray-100">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+              <i class="fas fa-money-bill-wave text-green-600 text-xl"></i>
+            </div>
+            <span class="text-green-600 text-xs font-semibold bg-green-50 px-2 py-1 rounded-full" id="serapanPersen">-</span>
+          </div>
+          <h3 class="text-xl md:text-2xl font-bold text-gray-800 mb-1 loading-pulse" id="serapanDD">-</h3>
+          <p class="text-xs md:text-sm text-gray-600">Serapan DD</p>
+        </div>
+
+        <div class="glass-effect rounded-xl p-4 md:p-6 shadow-md card-hover border border-gray-100">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+              <i class="fas fa-building text-purple-600 text-xl"></i>
+            </div>
+            <span class="text-yellow-600 text-xs font-semibold bg-yellow-50 px-2 py-1 rounded-full" id="bumdesaAktif">-</span>
+          </div>
+          <h3 class="text-2xl md:text-3xl font-bold text-gray-800 mb-1 loading-pulse" id="bumdesaTotal">-</h3>
+          <p class="text-xs md:text-sm text-gray-600">Bumdesa</p>
+        </div>
+
+        <div class="glass-effect rounded-xl p-4 md:p-6 shadow-md card-hover border border-gray-100">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+              <i class="fas fa-heartbeat text-red-600 text-xl"></i>
+            </div>
+            <span class="text-red-600 text-xs font-semibold bg-red-50 px-2 py-1 rounded-full" id="stuntingStatus">-</span>
+          </div>
+          <h3 class="text-2xl md:text-3xl font-bold text-gray-800 mb-1 loading-pulse" id="stuntingKasus">-</h3>
+          <p class="text-xs md:text-sm text-gray-600">Kasus Stunting</p>
+        </div>
+
+        <div class="glass-effect rounded-xl p-4 md:p-6 shadow-md card-hover border border-gray-100">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+              <i class="fas fa-users text-orange-600 text-xl"></i>
+            </div>
+            <span class="text-orange-600 text-xs font-semibold bg-orange-50 px-2 py-1 rounded-full">BLT-DD</span>
+          </div>
+          <h3 class="text-2xl md:text-3xl font-bold text-gray-800 mb-1 loading-pulse" id="jumlahKPM">-</h3>
+          <p class="text-xs md:text-sm text-gray-600">KPM Penerima</p>
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="glass-effect rounded-xl p-4 md:p-6 shadow-md border border-gray-100">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-800">Grafik Penyaluran Dana Desa</h3>
+            <span class="text-xs text-gray-500">Pagu vs Realisasi</span>
+          </div>
+          <canvas id="ddChart"></canvas>
+        </div>
+
+        <div class="glass-effect rounded-xl p-4 md:p-6 shadow-md border border-gray-100">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-800">Status Indeks Desa</h3>
+            <button class="text-xs text-blue-600 hover:text-blue-700 font-semibold">Lihat Detail</button>
+          </div>
+          <canvas id="idChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Penerima BLT-DD Card -->
+      <div class="glass-effect rounded-xl p-4 md:p-6 shadow-md border border-gray-100 mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-gray-800">Penerima BLT-DD</h3>
+          <div class="text-xs text-gray-500 flex items-center gap-1">
+            <i class="fas fa-database"></i>
+            <span>Data Real-time</span>
+          </div>
+        <div class="bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200">
+          <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <div class="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-hand-holding-heart text-white text-2xl"></i>
+              </div>
+              <div>
+                <p class="text-3xl md:text-4xl font-bold text-orange-700 loading-pulse" id="bltCardNumber">-</p>
+                <p class="text-sm text-orange-600 font-semibold">KPM Penerima BLT-DD</p>
+                <p class="text-xs text-orange-500 mt-1">Keluarga Penerima Manfaat</p>
+              </div>
+            <div class="text-center md:text-right">
+              <p class="text-sm text-gray-600 mb-2">Target Penyaluran 2024</p>
+              <div class="flex items-center gap-2 text-green-600 justify-center md:justify-end">
+                <i class="fas fa-check-circle"></i>
+                <span class="text-sm font-semibold">Tersalurkan Sesuai Data</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-white py-6 mt-8">
+    <div class="container mx-auto px-4">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+        <div>
+          <p class="text-sm font-semibold">© 2024 Dashboard Pendampingan Desa Kecamatan Barambai</p>
+          <p class="text-xs text-gray-400 mt-1">Dikelola oleh Tenaga Pendamping Profesional</p>
+        </div>
+        <div class="flex items-center gap-4 text-xs">
+          <a href="#" class="hover:text-blue-400 transition">Kebijakan Privasi</a>
+          <span class="text-gray-600">|</span>
+          <a href="#" class="hover:text-blue-400 transition">Bantuan</a>
+          <span class="text-gray-600">|</span>
+          <a href="https://tppkecamatanbarambai.blogspot.com/" target="_blank" class="hover:text-blue-400 transition">Website TPP</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // URLs
+    const CSV_URLS = {
+      ringkasan: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTGSiHgYXiyqpCX6hmraLfXOas4Sydssnirqx4ucWkp5TkXrxW53KfNa_FH-bTZlQ/pub?gid=139839793&single=true&output=csv',
+      grafikDD: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTGSiHgYXiyqpCX6hmraLfXOas4Sydssnirqx4ucWkp5TkXrxW53KfNa_FH-bTZlQ/pub?gid=348565644&single=true&output=csv',
+      indeksDesa: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTGSiHgYXiyqpCX6hmraLfXOas4Sydssnirqx4ucWkp5TkXrxW53KfNa_FH-bTZlQ/pub?gid=288849891&single=true&output=csv'
+    };
+
+    // Chart instances
+    let ddChartInstance = null;
+    let idChartInstance = null;
+
+    // Mobile Menu Toggle
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const mobileOverlay = document.getElementById('mobileOverlay');
+
+    mobileMenuBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('show');
+      mobileOverlay.classList.toggle('hidden');
+    });
+
+    mobileOverlay.addEventListener('click', () => {
+      sidebar.classList.remove('show');
+      mobileOverlay.classList.add('hidden');
+    });
+
+    // Accordion Menu
+    const menuToggles = document.querySelectorAll('.menu-toggle');
+    menuToggles.forEach(toggle => {
+      toggle.addEventListener('click', () => {
+        const submenu = toggle.nextElementSibling;
+        const icon = toggle.querySelector('.fa-chevron-down');
+        
+        menuToggles.forEach(otherToggle => {
+          if (otherToggle !== toggle) {
+            otherToggle.nextElementSibling.classList.add('hidden');
+            otherToggle.querySelector('.fa-chevron-down').style.transform = 'rotate(0deg)';
+          }
+        });
+        
+        submenu.classList.toggle('hidden');
+        if (!submenu.classList.contains('hidden')) {
+          submenu.classList.add('submenu-enter');
+          icon.style.transform = 'rotate(180deg)';
+        } else {
+          icon.style.transform = 'rotate(0deg)';
+        }
+      });
+    });
+
+    // Current Date
+    const dateElement = document.getElementById('currentDate');
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    dateElement.textContent = new Date().toLocaleDateString('id-ID', options);
+
+    // Helper: Clean number from CSV - FIXED: Handle koma desimal Indonesia
+    function parseNumber(value) {
+      if (!value || value === '' || value === '-') return 0;
+      // Hapus spasi, ubah koma jadi titik untuk desimal, handle ribuan
+      const cleaned = String(value).trim().replace(/\s/g, '').replace(/\.(?=.*\.)/g, '').replace(/,/g, '.');
+      const num = parseFloat(cleaned);
+      return isNaN(num) ? 0 : num;
+    }
+
+    // Helper: Get value case-insensitive - FIXED untuk header P kapital
+    function getRowValue(row, ...keys) {
+      for (const key of keys) {
+        if (row[key] !== undefined && row[key] !== null && row[key] !== '') {
+          return row[key];
+        }
+      }
+      // Fallback: cari key dengan case-insensitive
+      const rowKeys = Object.keys(row);
+      for (const searchKey of keys) {
+        const foundKey = rowKeys.find(k => k.toLowerCase() === searchKey.toLowerCase());
+        if (foundKey && row[foundKey] !== undefined && row[foundKey] !== '') {
+          return row[foundKey];
+        }
+      }
+      return null;
+    }
+
+    // Fetch CSV function
+    async function fetchCSV(url) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Network response was not ok');
+        const text = await response.text();
+        return new Promise((resolve, reject) => {
+          Papa.parse(text, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => resolve(results.data),
+            error: (error) => reject(error)
+          });
+        });
+      } catch (error) {
+        console.error('Error fetching CSV:', error);
+        throw error;
+      }
+    }
+
+    // Show/Hide loading states
+    function showLoading() {
+      document.getElementById('loadingBanner').classList.remove('hidden');
+      document.getElementById('mainContainer').style.paddingTop = '7rem';
+      document.getElementById('errorBanner').classList.add('hidden');
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingBanner').classList.add('hidden');
+      document.getElementById('mainContainer').style.paddingTop = '4rem';
+      if (window.innerWidth >= 768) {
+        document.getElementById('mainContainer').style.paddingTop = '5rem';
+      }
+    }
+
+    function showError(message) {
+      document.getElementById('errorText').textContent = message;
+      document.getElementById('errorBanner').classList.remove('hidden');
+      document.getElementById('loadingBanner').classList.add('hidden');
+      document.getElementById('mainContainer').style.paddingTop = '7rem';
+    }
+
+    // Load Ringkasan Data
+    async function loadRingkasanData() {
+      try {
+        const data = await fetchCSV(CSV_URLS.ringkasan);
+        if (data && data.length > 0) {
+          const row = data[0];
+          
+          document.getElementById('totalDesa').textContent = row.total_desa || '0';
+          document.getElementById('totalDesa').classList.remove('loading-pulse');
+          
+          document.getElementById('serapanDD').textContent = row.serapan_dd || '0M';
+          document.getElementById('serapanDD').classList.remove('loading-pulse');
+          
+          document.getElementById('serapanPersen').textContent = row.serapan_persen || '0%';
+          
+          document.getElementById('bumdesaTotal').textContent = row.bumdesa_total || '0';
+          document.getElementById('bumdesaTotal').classList.remove('loading-pulse');
+          
+          document.getElementById('bumdesaAktif').textContent = `${row.bumdesa_aktif || '0'} Aktif`;
+          
+          document.getElementById('stuntingKasus').textContent = row.stunting_kasus || '0';
+          document.getElementById('stuntingKasus').classList.remove('loading-pulse');
+          
+          document.getElementById('stuntingStatus').textContent = row.stunting_status || 'Normal';
+          
+          document.getElementById('jumlahKPM').textContent = row.jumlah_kpm_blt || '0';
+          document.getElementById('jumlahKPM').classList.remove('loading-pulse');
+          
+          document.getElementById('bltCardNumber').textContent = row.jumlah_kpm_blt || '0';
+          document.getElementById('bltCardNumber').classList.remove('loading-pulse');
+        }
+      } catch (error) {
+        console.error('Error loading ringkasan:', error);
+        setFallbackRingkasan();
+      }
+    }
+
+    // Load Grafik DD Data - FIXED: Case-insensitive + koma decimal
+    async function loadGrafikDDData() {
+      try {
+        const data = await fetchCSV(CSV_URLS.grafikDD);
+        console.log('Grafik DD Raw Data:', data);
+        
+        if (data && data.length > 0) {
+          const tahun = data.map(d => getRowValue(d, 'tahun', 'Tahun'));
+          const pagu = data.map(d => parseNumber(getRowValue(d, 'pagu', 'Pagu')));
+          const tahap1 = data.map(d => parseNumber(getRowValue(d, 'penyaluran_tahap1', 'Penyaluran_tahap1', 'penyaluran_tahap_1', 'Penyaluran_Tahap1')));
+          const tahap2 = data.map(d => parseNumber(getRowValue(d, 'penyaluran_tahap2', 'Penyaluran_tahap2', 'penyaluran_tahap_2', 'Penyaluran_Tahap2')));
+          
+          const parsedData = { tahun, pagu, tahap1, tahap2 };
+          console.log('Data grafik DD:', parsedData);
+          updateDDChart(tahun, pagu, tahap1, tahap2);
+        }
+      } catch (error) {
+        console.error('Error loading grafik DD:', error);
+        setFallbackDDChart();
+      }
+    }
+
+    // Load Indeks Desa Data
+    async function loadIndeksDesaData() {
+      try {
+        const data = await fetchCSV(CSV_URLS.indeksDesa);
+        if (data && data.length > 0) {
+          const labels = data.map(d => getRowValue(d, 'status', 'Status'));
+          const values = data.map(d => parseInt(getRowValue(d, 'jumlah', 'Jumlah')) || 0);
+          
+          updateIDChart(labels, values);
+        }
+      } catch (error) {
+        console.error('Error loading indeks desa:', error);
+        setFallbackIDChart();
+      }
+    }
+
+    // Update DD Chart - FIXED: min: 0, barPercentage, nilai kecil tetap render
+    function updateDDChart(labels, pagu, tahap1, tahap2) {
+      const ddCtx = document.getElementById('ddChart').getContext('2d');
+      
+      if (ddChartInstance) {
+        ddChartInstance.destroy();
+      }
+      
+      ddChartInstance = new Chart(ddCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Pagu (M)',
+              data: pagu,
+              backgroundColor: 'rgba(100, 116, 139, 0.8)',
+              borderColor: 'rgba(100, 116, 139, 1)',
+              borderWidth: 2,
+              borderRadius: 8,
+              barPercentage: 0.8,
+              skipNull: false
+            },
+            {
+              label: 'Tahap 1 (M)',
+              data: tahap1,
+              backgroundColor: 'rgba(59, 130, 246, 0.8)',
+              borderColor: 'rgba(59, 130, 246, 1)',
+              borderWidth: 2,
+              borderRadius: 8,
+              barPercentage: 0.8,
+              skipNull: false
+            },
+            {
+              label: 'Tahap 2 (M)',
+              data: tahap2,
+              backgroundColor: 'rgba(34, 197, 94, 0.8)',
+              borderColor: 'rgba(34, 197, 94, 1)',
+              borderWidth: 2,
+              borderRadius: 8,
+              barPercentage: 0.8,
+              skipNull: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom',
+              labels: {
+                padding: 15,
+                font: { size: 11 },
+                usePointStyle: true
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const val = context.parsed.y;
+                  return context.dataset.label + ': ' + (val === 0 ? 'Belum Cair' : val.toFixed(1) + 'M');
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              min: 0,
+              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+              ticks: {
+                callback: function(value) {
+                  return value + 'M';
+                }
+              }
+            },
+            x: {
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    // Update ID Chart
+    function updateIDChart(labels, data) {
+      const idCtx = document.getElementById('idChart').getContext('2d');
+      
+      if (idChartInstance) {
+        idChartInstance.destroy();
+      }
+      
+      idChartInstance = new Chart(idCtx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: [
+              'rgba(34, 197, 94, 0.8)',
+              'rgba(59, 130, 246, 0.8)',
+              'rgba(234, 179, 8, 0.8)',
+              'rgba(239, 68, 68, 0.8)'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 15,
+                font: { size: 11 },
+                usePointStyle: true
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Fallback Data
+    function setFallbackRingkasan() {
+      document.getElementById('totalDesa').textContent = '9';
+      document.getElementById('totalDesa').classList.remove('loading-pulse');
+      document.getElementById('serapanDD').textContent = '8.5M';
+      document.getElementById('serapanDD').classList.remove('loading-pulse');
+      document.getElementById('serapanPersen').textContent = '85%';
+      document.getElementById('bumdesaTotal').textContent = '7';
+      document.getElementById('bumdesaTotal').classList.remove('loading-pulse');
+      document.getElementById('bumdesaAktif').textContent = '2 Aktif';
+      document.getElementById('stuntingKasus').textContent = '12';
+      document.getElementById('stuntingKasus').classList.remove('loading-pulse');
+      document.getElementById('stuntingStatus').textContent = 'Perlu Atensi';
+      document.getElementById('jumlahKPM').textContent = '85';
+      document.getElementById('jumlahKPM').classList.remove('loading-pulse');
+      document.getElementById('bltCardNumber').textContent = '85';
+      document.getElementById('bltCardNumber').classList.remove('loading-pulse');
+    }
+
+    function setFallbackDDChart() {
+      updateDDChart(['2022', '2023', '2024'], [10, 12, 11], [8, 9, 7], [9, 11, 3.1]);
+    }
+
+    function setFallbackIDChart() {
+      updateIDChart(['Mandiri', 'Maju', 'Berkembang', 'Tertinggal'], [2, 3, 3, 1]);
+    }
+
+    // Load All Data
+    async function loadAllData() {
+      showLoading();
+      try {
+        await Promise.all([
+          loadRingkasanData(),
+          loadGrafikDDData(),
+          loadIndeksDesaData()
+        ]);
+        hideLoading();
+      } catch (error) {
+        console.error('Error loading data:', error);
+        showError('Gagal memuat data dari Google Sheets. Menggunakan data contoh.');
+        setFallbackRingkasan();
+        setFallbackDDChart();
+        setFallbackIDChart();
+      }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAllData();
+    });
+
+    // Close sidebar on menu click mobile
+    document.querySelectorAll('.submenu a, .sidebar a').forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth < 768) {
+          sidebar.classList.remove('show');
+          mobileOverlay.classList.add('hidden');
+        }
+      });
+    });
+  </script>
+<script>(function(){document.addEventListener("click",function(e){var a=e.target.closest("[data-product-id]");if(!a)return;e.preventDefault();var pid=a.getAttribute("data-product-id");if(pid)parent.postMessage({type:"ecto-artifact-link-click",productId:pid},"*")})})();</script>
+</body>
+</html>
